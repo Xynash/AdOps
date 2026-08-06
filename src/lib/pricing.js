@@ -1,0 +1,55 @@
+export const PRICING_TIERS = [
+  {
+    name: "Starter",
+    tagline: "For solo ops managers testing the waters",
+    monthlyPrice: 0,
+    annualPrice: 0,
+    color: "campaign-mint",
+    cta: "Explore free tier",
+    ctaVariant: "outlineDark",
+    featured: false,
+    features: [
+      "Up to 5 campaigns validated / month",
+      "Basic QA checks (URL + UTM)",
+      "Community support",
+      "1 team member",
+    ],
+  },
+  {
+    name: "Growth",
+    tagline: "For startups and small agencies running weekly campaigns",
+    monthlyPrice: 49,
+    annualPrice: 39,
+    color: "campaign-blue",
+    cta: "Start free trial",
+    ctaVariant: "solid",
+    featured: true,
+    badge: "Most popular",
+    features: [
+      "Unlimited QA validation",
+      "SLA-tracked support tickets",
+      "Escalation log & audit trail",
+      "Up to 8 team members",
+      "Email + chat support",
+    ],
+  },
+  {
+    name: "Scale",
+    tagline: "For agencies and in-house teams managing multiple clients",
+    monthlyPrice: null,
+    annualPrice: null,
+    color: "campaign-pink",
+    cta: "Talk to sales",
+    ctaVariant: "dark",
+    featured: false,
+    features: [
+      "Everything in Growth",
+      "Full analytics dashboard",
+      "Unlimited team members",
+      "Dedicated account manager",
+      "Custom QA rule configuration",
+    ],
+  },
+];
+
+export const PRICING_BONUS = "2 months free on annual plans, plus a free onboarding session for teams of 5+.";

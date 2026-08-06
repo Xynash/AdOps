@@ -1,0 +1,42 @@
+export const CASE_STUDIES = [
+  {
+    company: "SleepWell",
+    industry: "D2C Mattresses",
+    headline: "Caught a broken checkout link before a festival sale went live",
+    before: "Manual QA",
+    after: "0 escalations",
+    color: "campaign-blue",
+  },
+  {
+    company: "NovaFitness",
+    industry: "Fitness App",
+    headline: "Cut QA turnaround from 2 days to same-day across 40 creatives",
+    before: "2 days",
+    after: "Same day",
+    color: "campaign-mint",
+  },
+  {
+    company: "UrbanCart",
+    industry: "E-commerce",
+    headline: "Flagged a mismatched tracking tag before it skewed attribution",
+    before: "Unnoticed",
+    after: "12% saved",
+    color: "campaign-pink",
+  },
+  {
+    company: "Kriya Foods",
+    industry: "CPG",
+    headline: "Standardized QA checklists across 3 regional agencies",
+    before: "3 rulesets",
+    after: "1 shared rule",
+    color: "campaign-yellow",
+  },
+  {
+    company: "Outmarket",
+    industry: "B2B SaaS",
+    headline: "Reduced average SLA response time on campaign tickets",
+    before: "11h avg",
+    after: "3.2h avg",
+    color: "campaign-red",
+  },
+];
