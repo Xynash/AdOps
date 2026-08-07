@@ -2,6 +2,7 @@
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, Literal
+from datetime import datetime
 from database import init_db, get_db
 from qa_engine import run_all_checks
 
@@ -210,3 +211,66 @@ def advance_escalation(escalation_id: int, advance: EscalationAdvance):
     conn.commit()
     conn.close()
     return {"id": escalation_id, "stage": advance.stage, "message": "Escalation advanced"}
+
+def _parse_ts(raw):
+    if not raw:
+        return None
+    try:
+        return datetime.strptime(raw, "%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        return None
+
+@app.get("/overview")
+def get_overview():
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT COUNT(*) AS c FROM campaigns")
+    total_campaigns = cursor.fetchone()["c"]
+
+    cursor.execute("SELECT COUNT(*) AS c FROM campaigns WHERE status IN ('qa_passed', 'qa_failed')")
+    validated_campaigns = cursor.fetchone()["c"]
+
+    cursor.execute("SELECT COUNT(*) AS c FROM campaigns WHERE status = 'qa_passed'")
+    passed_campaigns = cursor.fetchone()["c"]
+
+    qa_pass_rate = round((passed_campaigns / validated_campaigns) * 100) if validated_campaigns else None
+
+    cursor.execute("SELECT COUNT(*) AS c FROM tickets WHERE status != 'resolved'")
+    open_tickets = cursor.fetchone()["c"]
+
+    cursor.execute("SELECT created_at, resolved_at FROM tickets WHERE status = 'resolved' AND resolved_at IS NOT NULL")
+    resolved_rows = cursor.fetchall()
+
+    response_hours = []
+    for row in resolved_rows:
+        created = _parse_ts(row["created_at"])
+        resolved = _parse_ts(row["resolved_at"])
+        if created and resolved:
+            response_hours.append((resolved - created).total_seconds() / 3600)
+
+    avg_sla_response_hours = round(sum(response_hours) / len(response_hours), 1) if response_hours else None
+
+    cursor.execute("SELECT COUNT(*) AS c FROM escalations WHERE current_stage != 'fixed'")
+    open_escalations = cursor.fetchone()["c"]
+
+    cursor.execute("""
+        SELECT tickets.priority, COUNT(*) AS c
+        FROM tickets
+        WHERE tickets.status != 'resolved'
+        GROUP BY tickets.priority
+    """)
+    priority_breakdown = {row["priority"]: row["c"] for row in cursor.fetchall()}
+
+    conn.close()
+
+    return {
+        "total_campaigns": total_campaigns,
+        "validated_campaigns": validated_campaigns,
+        "qa_pass_rate": qa_pass_rate,
+        "open_tickets": open_tickets,
+        "avg_sla_response_hours": avg_sla_response_hours,
+        "open_escalations": open_escalations,
+        "high_priority_open": priority_breakdown.get("high", 0),
+        "standard_priority_open": priority_breakdown.get("standard", 0),
+    }

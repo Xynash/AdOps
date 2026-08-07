@@ -6,20 +6,14 @@ import ProblemStrip from "./sections/ProblemStrip";
 import CampaignNews from "./sections/CampaignNews";
 import ProductWalkthrough from "./sections/ProductWalkthrough";
 import HowItWorks from "./sections/HowItWorks";
-import Pricing from "./sections/Pricing";
 import FinalCTA from "./sections/FinalCTA";
 import Footer from "./sections/Footer";
-import AuthModal from "./components/AuthModal";
 import Dashboard from "./sections/Dashboard";
 import PersonaSelect from "./sections/PersonaSelect";
-import PageTransition from "./components/PageTransition";
+import AuthPage from "./sections/AuthPage";
 
 const USER_STORAGE_KEY = "adsquadops_user";
 const PERSONA_STORAGE_KEY = "adsquadops_persona";
-
-const FADE_IN_MS = 300;
-const HOLD_MS = 1400;
-const FADE_OUT_MS = 300;
 
 function loadStoredUser() {
   try {
@@ -34,15 +28,18 @@ function loadStoredPersona() {
   return localStorage.getItem(PERSONA_STORAGE_KEY);
 }
 
+const VIEW_PATHS = {
+  landing: "/",
+  dashboard: "/dashboard",
+  persona: "/persona",
+  login: "/login",
+  signup: "/register",
+};
+
 function App() {
-  const [showModal, setShowModal] = useState(false);
-  const [authMode, setAuthMode] = useState("signup");
   const [view, setView] = useState("landing");
   const [user, setUser] = useState(loadStoredUser);
   const [persona, setPersona] = useState(loadStoredPersona);
-
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  const [overlayVisible, setOverlayVisible] = useState(false);
 
   useEffect(() => {
     window.history.replaceState({ view: "landing" }, "", window.location.pathname);
@@ -56,40 +53,14 @@ function App() {
   }, []);
 
   function navigateTo(nextView) {
-    setIsTransitioning(true);
-    setOverlayVisible(true);
-
-    setTimeout(() => {
-      setView(nextView);
-      const path = nextView === "dashboard" ? "/dashboard" : nextView === "persona" ? "/persona" : "/";
-      window.history.pushState({ view: nextView }, "", path);
-    }, FADE_IN_MS);
-
-    setTimeout(() => {
-      setOverlayVisible(false);
-    }, FADE_IN_MS + HOLD_MS);
-
-    setTimeout(() => {
-      setIsTransitioning(false);
-    }, FADE_IN_MS + HOLD_MS + FADE_OUT_MS);
-  }
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!user) setShowModal(true);
-    }, 5000);
-    return () => clearTimeout(timer);
-  }, [user]);
-
-  function openModal(mode) {
-    setAuthMode(mode);
-    setShowModal(true);
+    setView(nextView);
+    window.history.pushState({ view: nextView }, "", VIEW_PATHS[nextView] || "/");
   }
 
   function handleAuthSuccess(userData) {
     setUser(userData);
     localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userData));
-    setShowModal(false);
+    navigateTo("landing");
   }
 
   function handleSignOut() {
@@ -113,7 +84,23 @@ function App() {
 
   return (
     <>
-      {isTransitioning && <PageTransition visible={overlayVisible} />}
+      {view === "login" && (
+        <AuthPage
+          mode="login"
+          onSuccess={handleAuthSuccess}
+          onSwitchMode={navigateTo}
+          onBack={() => navigateTo("landing")}
+        />
+      )}
+
+      {view === "signup" && (
+        <AuthPage
+          mode="signup"
+          onSuccess={handleAuthSuccess}
+          onSwitchMode={navigateTo}
+          onBack={() => navigateTo("landing")}
+        />
+      )}
 
       {view === "persona" && (
         <PersonaSelect onSelect={handlePersonaSelect} onBack={() => navigateTo("landing")} />
@@ -127,8 +114,8 @@ function App() {
         <div className="min-h-screen bg-paper text-ink font-body">
           <Navbar
             user={user}
-            onSignIn={() => openModal("signin")}
-            onSignUp={() => openModal("signup")}
+            onSignIn={() => navigateTo("login")}
+            onSignUp={() => navigateTo("signup")}
             onSignOut={handleSignOut}
           />
           <Hero onRequestDemo={goToDemo} />
@@ -137,13 +124,8 @@ function App() {
           <CampaignNews />
           <ProductWalkthrough />
           <HowItWorks />
-          <Pricing />
-          <FinalCTA onTryDashboard={user ? goToDemo : () => openModal("signup")} />
+          <FinalCTA onTryDashboard={user ? goToDemo : () => navigateTo("signup")} />
           <Footer />
-
-          {showModal && (
-            <AuthModal onClose={() => setShowModal(false)} onSuccess={handleAuthSuccess} initialMode={authMode} />
-          )}
         </div>
       )}
     </>

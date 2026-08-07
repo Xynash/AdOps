@@ -1,11 +1,9 @@
-export const PRICING_TIERS = [
+﻿export const PRICING_TIERS = [
   {
     name: "Starter",
     tagline: "For solo ops managers testing the waters",
-    monthlyPrice: 0,
-    annualPrice: 0,
     color: "campaign-mint",
-    cta: "Explore free tier",
+    cta: "Get started free",
     ctaVariant: "outlineDark",
     featured: false,
     features: [
@@ -18,10 +16,8 @@ export const PRICING_TIERS = [
   {
     name: "Growth",
     tagline: "For startups and small agencies running weekly campaigns",
-    monthlyPrice: 49,
-    annualPrice: 39,
     color: "campaign-blue",
-    cta: "Start free trial",
+    cta: "Get started free",
     ctaVariant: "solid",
     featured: true,
     badge: "Most popular",
@@ -36,10 +32,8 @@ export const PRICING_TIERS = [
   {
     name: "Scale",
     tagline: "For agencies and in-house teams managing multiple clients",
-    monthlyPrice: null,
-    annualPrice: null,
     color: "campaign-pink",
-    cta: "Talk to sales",
+    cta: "Get started free",
     ctaVariant: "dark",
     featured: false,
     features: [
@@ -52,4 +46,4 @@ export const PRICING_TIERS = [
   },
 ];
 
-export const PRICING_BONUS = "2 months free on annual plans, plus a free onboarding session for teams of 5+.";
+export const PRICING_BONUS = "Every plan is free, no credit card required, while AdSquadOps is in early access.";

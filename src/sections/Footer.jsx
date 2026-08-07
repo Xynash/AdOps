@@ -1,6 +1,7 @@
 ﻿import { Globe, Mail, MessageCircle } from "lucide-react";
 import { FOOTER_COLUMNS } from "../lib/footerLinks";
 import { COMPANY_NAME } from "../lib/constants";
+import { scrollToId } from "../lib/smoothScroll";
 
 export default function Footer() {
   return (
@@ -18,11 +19,21 @@ export default function Footer() {
             <div key={col.title}>
               <div className="font-mono text-[11px] text-white/40 tracking-wider uppercase mb-4">{col.title}</div>
               <div className="space-y-2.5">
-                {col.links.map((link) => (
-                  <div key={link} className="text-sm text-white/70 hover:text-paper transition-colors cursor-pointer">
-                    {link}
-                  </div>
-                ))}
+                {col.links.map((link) =>
+                  link.href ? (
+                    <button
+                      key={link.label}
+                      onClick={() => scrollToId(link.href.replace("#", ""), 900)}
+                      className="block text-sm text-white/70 hover:text-paper transition-colors cursor-pointer text-left"
+                    >
+                      {link.label}
+                    </button>
+                  ) : (
+                    <div key={link.label} className="text-sm text-white/25 cursor-default">
+                      {link.label}
+                    </div>
+                  )
+                )}
               </div>
             </div>
           ))}

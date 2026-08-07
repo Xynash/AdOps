@@ -47,8 +47,9 @@ function Station({ sol, index }) {
   return (
     <div
       ref={ref}
+      id={"lifecycle-" + sol.mockup}
       className={
-        "relative grid md:grid-cols-2 gap-8 md:gap-16 items-center transition-all duration-700 " +
+        "relative grid md:grid-cols-2 gap-8 md:gap-16 items-center transition-all duration-700 scroll-mt-24 " +
         (inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10")
       }
     >
@@ -103,7 +104,7 @@ function Station({ sol, index }) {
 
 export default function ProductWalkthrough() {
   return (
-    <section className="bg-paper px-6 md:px-10 py-24 border-t border-ink/10">
+    <section id="lifecycle" className="bg-paper px-6 md:px-10 py-24 border-t border-ink/10">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-20">
           <div className="flex justify-center mb-5">

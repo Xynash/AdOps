@@ -73,3 +73,9 @@ export async function advanceEscalation(id, data) {
   if (!res.ok) throw new Error("Failed to advance escalation");
   return res.json();
 }
+
+export async function getOverview() {
+  const res = await fetch(BASE_URL + "/overview");
+  if (!res.ok) throw new Error("Failed to fetch overview");
+  return res.json();
+}

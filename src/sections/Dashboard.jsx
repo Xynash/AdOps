@@ -9,6 +9,7 @@ import {
 } from "../lib/api";
 import { COMPANY_NAME } from "../lib/constants";
 import Button from "../components/Button";
+import EscalationsPanel from "../components/EscalationsPanel";
 
 const DAILY_PASS_LIMIT = 4;
 const PASS_STORAGE_KEY = "adsquadops_demo_passes";
@@ -28,6 +29,7 @@ const STATUS_META = {
 const TABS = [
   { key: "campaigns", label: "Campaigns" },
   { key: "tickets", label: "SLA Tickets" },
+  { key: "escalations", label: "Escalations" },
 ];
 
 function todayKey() {
@@ -94,7 +96,6 @@ function formatCountdown(createdAt, slaHours, now) {
 export default function Dashboard({ onExit, persona }) {
   const [activeTab, setActiveTab] = useState("campaigns");
 
-  // Campaigns state
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -110,7 +111,6 @@ export default function Dashboard({ onExit, persona }) {
     ad_copy: "",
   });
 
-  // Tickets state
   const [tickets, setTickets] = useState([]);
   const [ticketsLoading, setTicketsLoading] = useState(true);
   const [showTicketForm, setShowTicketForm] = useState(false);
@@ -157,7 +157,6 @@ export default function Dashboard({ onExit, persona }) {
     refreshTickets();
   }, []);
 
-  // Live countdown tick
   useEffect(() => {
     const interval = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(interval);
@@ -606,8 +605,9 @@ export default function Dashboard({ onExit, persona }) {
             )}
           </>
         )}
+
+        {activeTab === "escalations" && <EscalationsPanel tickets={tickets} />}
       </div>
     </div>
   );
 }
-

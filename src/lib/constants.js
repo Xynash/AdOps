@@ -1,7 +1,7 @@
-export const NAV_LINKS = [
-  { label: "Product", href: "#product" },
+﻿export const NAV_LINKS = [
+  { label: "Why AdOps?", href: "#product" },
+  { label: "Lifecycle", href: "#lifecycle" },
   { label: "How it works", href: "#how-it-works" },
-  { label: "Pricing", href: "#pricing" },
 ];
 
 export const COMPANY_NAME = "AdSquadOps";
