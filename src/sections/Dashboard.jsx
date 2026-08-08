@@ -10,8 +10,13 @@ import {
 import { COMPANY_NAME } from "../lib/constants";
 import Button from "../components/Button";
 import EscalationsPanel from "../components/EscalationsPanel";
+import OverviewPanel from "../components/OverviewPanel";
+import OnboardingTour from "../components/OnboardingTour";
+import DemoCampaignPicker from "../components/DemoCampaignPicker";
+import FirstTimeHint from "../components/FirstTimeHint";
 
 const DAILY_PASS_LIMIT = 4;
+const ADMIN_EMAILS = ["ash162005@gmail.com"];
 const PASS_STORAGE_KEY = "adsquadops_demo_passes";
 
 const CHECK_META = {
@@ -30,6 +35,7 @@ const TABS = [
   { key: "campaigns", label: "Campaigns" },
   { key: "tickets", label: "SLA Tickets" },
   { key: "escalations", label: "Escalations" },
+  { key: "overview", label: "Overview" },
 ];
 
 function todayKey() {
@@ -93,8 +99,9 @@ function formatCountdown(createdAt, slaHours, now) {
   return { text: `${s}s left`, overdue: false };
 }
 
-export default function Dashboard({ onExit, persona }) {
+export default function Dashboard({ onExit, persona, user }) {
   const [activeTab, setActiveTab] = useState("campaigns");
+  const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem("adsquadops_onboarding_seen"));
 
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -124,7 +131,8 @@ export default function Dashboard({ onExit, persona }) {
     priority: "standard",
   });
 
-  const remainingPasses = DAILY_PASS_LIMIT - passState.used;
+  const isAdmin = user && ADMIN_EMAILS.includes(user.email);
+  const remainingPasses = isAdmin ? Infinity : DAILY_PASS_LIMIT - passState.used;
 
   async function refreshCampaigns() {
     try {
@@ -166,7 +174,7 @@ export default function Dashboard({ onExit, persona }) {
     e.preventDefault();
 
     const current = getPassState();
-    if (current.used >= DAILY_PASS_LIMIT) {
+    if (!isAdmin && current.used >= DAILY_PASS_LIMIT) {
       setError("You've used all 4 demo passes for today — come back tomorrow!");
       return;
     }
@@ -181,6 +189,23 @@ export default function Dashboard({ onExit, persona }) {
       refreshCampaigns();
     } catch (e) {
       setError("Failed to create campaign.");
+    }
+  }
+
+  async function handleLoadDemo(demo) {
+    const currentPass = getPassState();
+    if (!isAdmin && currentPass.used >= DAILY_PASS_LIMIT) {
+      setError("You've used all 4 demo passes for today, come back tomorrow!");
+      return;
+    }
+    try {
+      await createCampaign(demo);
+      const updated = { date: currentPass.date, used: currentPass.used + 1 };
+      savePassState(updated);
+      setPassState(updated);
+      refreshCampaigns();
+    } catch (e) {
+      setError("Failed to load demo campaign.");
     }
   }
 
@@ -235,6 +260,14 @@ export default function Dashboard({ onExit, persona }) {
 
   return (
     <div className="min-h-screen bg-paper text-ink font-body">
+      {showOnboarding && (
+        <OnboardingTour
+          onFinish={() => {
+            setShowOnboarding(false);
+            localStorage.setItem("adsquadops_onboarding_seen", "true");
+          }}
+        />
+      )}
       <nav className="bg-ink px-6 md:px-10 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span className="font-display font-semibold text-paper text-lg">{COMPANY_NAME}</span>
@@ -297,6 +330,11 @@ export default function Dashboard({ onExit, persona }) {
                 New campaign
               </button>
             </div>
+
+            <FirstTimeHint
+              hintKey="campaigns"
+              message="Create a campaign and we'll run it through real QA checks — URL reachability, tracking tag format, and an AI check on your ad copy."
+            />
 
             {error && (
               <div className="bg-campaign-red/10 text-campaign-red text-sm rounded-lg px-4 py-3 mb-6">
@@ -397,13 +435,16 @@ export default function Dashboard({ onExit, persona }) {
                 Loading campaigns...
               </div>
             ) : campaigns.length === 0 ? (
-              <div className="flex flex-col items-center text-center border border-dashed border-ink/15 rounded-xl py-14 px-6">
-                <div className="w-10 h-10 rounded-full bg-ink/5 flex items-center justify-center mb-3">
-                  <Inbox size={18} className="text-slate" />
+              <>
+                <DemoCampaignPicker onLoad={handleLoadDemo} disabled={remainingPasses <= 0} />
+                <div className="flex flex-col items-center text-center border border-dashed border-ink/15 rounded-xl py-14 px-6">
+                  <div className="w-10 h-10 rounded-full bg-ink/5 flex items-center justify-center mb-3">
+                    <Inbox size={18} className="text-slate" />
+                  </div>
+                  <p className="text-sm font-medium mb-1">No campaigns yet</p>
+                  <p className="text-slate text-xs">Create your first one above to see it validated here.</p>
                 </div>
-                <p className="text-sm font-medium mb-1">No campaigns yet</p>
-                <p className="text-slate text-xs">Create your first one above to see it validated here.</p>
-              </div>
+              </>
             ) : (
               <div className="space-y-3">
                 {campaigns.map((c) => {
@@ -466,6 +507,11 @@ export default function Dashboard({ onExit, persona }) {
                 New ticket
               </button>
             </div>
+
+            <FirstTimeHint
+              hintKey="tickets"
+              message="Open a ticket when a campaign needs a fix. Each one gets a live SLA countdown based on priority."
+            />
 
             {ticketError && (
               <div className="bg-campaign-red/10 text-campaign-red text-sm rounded-lg px-4 py-3 mb-6">
@@ -607,7 +653,9 @@ export default function Dashboard({ onExit, persona }) {
         )}
 
         {activeTab === "escalations" && <EscalationsPanel tickets={tickets} />}
+        {activeTab === "overview" && <OverviewPanel />}
       </div>
     </div>
   );
 }
+

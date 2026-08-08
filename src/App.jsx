@@ -107,7 +107,7 @@ function App() {
       )}
 
       {view === "dashboard" && (
-        <Dashboard onExit={() => navigateTo("landing")} persona={persona} />
+        <Dashboard onExit={() => navigateTo("landing")} persona={persona} user={user} />
       )}
 
       {view === "landing" && (
@@ -117,6 +117,7 @@ function App() {
             onSignIn={() => navigateTo("login")}
             onSignUp={() => navigateTo("signup")}
             onSignOut={handleSignOut}
+            onGoToDashboard={goToDemo}
           />
           <Hero onRequestDemo={goToDemo} />
           <AdOpsOverview />

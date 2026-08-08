@@ -5,6 +5,7 @@ from typing import Optional, Literal
 from datetime import datetime
 from database import init_db, get_db
 from qa_engine import run_all_checks
+from auth import hash_password, verify_password
 
 app = FastAPI(title="AdSquadOps API")
 
@@ -37,8 +38,55 @@ class EscalationAdvance(BaseModel):
     stage: Literal["in_progress", "fixed"]
     note: Optional[str] = None
 
+class UserRegister(BaseModel):
+    name: str
+    email: str
+    password: str
+
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
 SLA_HOURS = {"high": 2, "standard": 4}
 STAGE_LABELS = {"reported": "Reported", "in_progress": "In progress", "fixed": "Fixed"}
+
+@app.post("/register")
+def register(user: UserRegister):
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT id FROM users WHERE email = ?", (user.email,))
+    if cursor.fetchone():
+        conn.close()
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    password_hash, salt = hash_password(user.password)
+    cursor.execute(
+        "INSERT INTO users (name, email, password_hash, salt) VALUES (?, ?, ?, ?)",
+        (user.name, user.email, password_hash, salt),
+    )
+    conn.commit()
+    user_id = cursor.lastrowid
+    conn.close()
+
+    return {"id": user_id, "name": user.name, "email": user.email}
+
+@app.post("/login")
+def login(credentials: UserLogin):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users WHERE email = ?", (credentials.email,))
+    row = cursor.fetchone()
+    conn.close()
+
+    if row is None:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    user = dict(row)
+    if not verify_password(credentials.password, user["salt"], user["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    return {"id": user["id"], "name": user["name"], "email": user["email"]}
 
 @app.post("/campaigns")
 def create_campaign(campaign: CampaignCreate):
