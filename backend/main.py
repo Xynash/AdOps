@@ -11,7 +11,7 @@ app = FastAPI(title="AdSquadOps API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["https://adsquadops.vercel.app", "http://localhost:5173"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -322,3 +322,4 @@ def get_overview():
         "high_priority_open": priority_breakdown.get("high", 0),
         "standard_priority_open": priority_breakdown.get("standard", 0),
     }
+
