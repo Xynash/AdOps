@@ -1,4 +1,4 @@
-﻿import re
+import re
 import os
 from pathlib import Path
 import requests
@@ -41,7 +41,7 @@ def check_ad_copy_alignment(ad_copy, destination_url):
         )
 
         completion = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="openai/gpt-oss-120b",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=60,
             temperature=0,
