@@ -1,5 +1,8 @@
 import re
 import os
+import socket
+import ipaddress
+from urllib.parse import urlparse, urljoin
 from pathlib import Path
 import requests
 from groq import Groq
@@ -12,13 +15,40 @@ client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 UTM_PATTERN = re.compile(r"utm_[a-zA-Z]+=[\w\-\.]+")
 
+MAX_REDIRECTS = 3
+BLOCKED_MSG = "Blocked: only public http(s) URLs are allowed"
+
+def _is_public_host(host):
+    try:
+        infos = socket.getaddrinfo(host, None)
+    except socket.gaierror:
+        return False
+    for info in infos:
+        ip = ipaddress.ip_address(info[4][0].split("%")[0])
+        if ip.version == 6 and ip.ipv4_mapped:
+            ip = ip.ipv4_mapped
+        if not ip.is_global:
+            return False
+    return True
+
 def check_url_reachable(url):
     try:
-        response = requests.get(url, timeout=5)
-        passed = response.status_code < 400
-        detail = "HTTP " + str(response.status_code)
-        return passed, detail
-    except requests.RequestException as e:
+        current = url
+        for _ in range(MAX_REDIRECTS + 1):
+            parsed = urlparse(current)
+            if parsed.scheme not in ("http", "https") or not parsed.hostname:
+                return False, BLOCKED_MSG
+            if not _is_public_host(parsed.hostname):
+                return False, BLOCKED_MSG
+            response = requests.get(current, timeout=5, allow_redirects=False)
+            if response.is_redirect and "location" in response.headers:
+                current = urljoin(current, response.headers["location"])
+                continue
+            passed = response.status_code < 400
+            detail = "HTTP " + str(response.status_code)
+            return passed, detail
+        return False, "Too many redirects"
+    except (requests.RequestException, ValueError) as e:
         return False, "Unreachable: " + str(e)
 
 def check_tracking_tag(tag):
