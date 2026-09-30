@@ -48,7 +48,6 @@ class UserLogin(BaseModel):
     password: str
 
 SLA_HOURS = {"high": 2, "standard": 4}
-STAGE_LABELS = {"reported": "Reported", "in_progress": "In progress", "fixed": "Fixed"}
 
 @app.post("/register")
 def register(user: UserRegister):
