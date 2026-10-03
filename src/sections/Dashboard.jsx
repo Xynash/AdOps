@@ -317,7 +317,7 @@ export default function Dashboard({ onExit, persona, user }) {
                 <p className="text-slate text-sm mt-1">Real campaigns, validated by your FastAPI backend.</p>
                 <p className="font-mono text-xs text-slate mt-1">
                   {remainingPasses > 0
-                    ? `${remainingPasses} of ${DAILY_PASS_LIMIT} demo passes left today`
+                    ? (isAdmin ? "Unlimited demo passes" : `${remainingPasses} of ${DAILY_PASS_LIMIT} demo passes left today`)
                     : "No demo passes left today"}
                 </p>
               </div>
