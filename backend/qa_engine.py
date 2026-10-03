@@ -19,10 +19,7 @@ MAX_REDIRECTS = 3
 BLOCKED_MSG = "Blocked: only public http(s) URLs are allowed"
 
 def _is_public_host(host):
-    try:
-        infos = socket.getaddrinfo(host, None)
-    except socket.gaierror:
-        return False
+    infos = socket.getaddrinfo(host, None)
     for info in infos:
         ip = ipaddress.ip_address(info[4][0].split("%")[0])
         if ip.version == 6 and ip.ipv4_mapped:
@@ -38,7 +35,11 @@ def check_url_reachable(url):
             parsed = urlparse(current)
             if parsed.scheme not in ("http", "https") or not parsed.hostname:
                 return False, BLOCKED_MSG
-            if not _is_public_host(parsed.hostname):
+            try:
+                public = _is_public_host(parsed.hostname)
+            except socket.gaierror:
+                return False, "Unreachable: host could not be resolved"
+            if not public:
                 return False, BLOCKED_MSG
             response = requests.get(current, timeout=5, allow_redirects=False)
             if response.is_redirect and "location" in response.headers:
