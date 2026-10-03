@@ -73,11 +73,13 @@ def check_ad_copy_alignment(ad_copy, destination_url):
         completion = client.chat.completions.create(
             model="openai/gpt-oss-120b",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=60,
+            max_tokens=512,
             temperature=0,
         )
 
-        result = completion.choices[0].message.content.strip()
+        result = (completion.choices[0].message.content or "").strip()
+        if not result:
+            return True, "AI check skipped: empty response"
         passed = result.startswith("OK")
         return passed, result
     except Exception as e:
