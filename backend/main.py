@@ -252,6 +252,14 @@ def advance_escalation(escalation_id: int, advance: EscalationAdvance):
         conn.close()
         raise HTTPException(status_code=404, detail="Escalation not found")
 
+    next_stage = {"reported": "in_progress", "in_progress": "fixed"}.get(row["current_stage"])
+    if advance.stage != next_stage:
+        conn.close()
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot move from " + row["current_stage"] + " to " + advance.stage,
+        )
+
     cursor.execute(
         "UPDATE escalations SET current_stage = ? WHERE id = ?",
         (advance.stage, escalation_id),
