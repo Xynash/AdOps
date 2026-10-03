@@ -227,12 +227,17 @@ def list_escalations():
     """)
     escalations = [dict(row) for row in cursor.fetchall()]
 
-    for esc in escalations:
-        cursor.execute(
-            "SELECT stage, note, created_at FROM escalation_log WHERE escalation_id = ? ORDER BY created_at ASC",
-            (esc["id"],),
+    cursor.execute(
+        "SELECT escalation_id, stage, note, created_at FROM escalation_log ORDER BY created_at ASC, id ASC"
+    )
+    logs_by_escalation = {}
+    for row in cursor.fetchall():
+        logs_by_escalation.setdefault(row["escalation_id"], []).append(
+            {"stage": row["stage"], "note": row["note"], "created_at": row["created_at"]}
         )
-        esc["log"] = [dict(row) for row in cursor.fetchall()]
+
+    for esc in escalations:
+        esc["log"] = logs_by_escalation.get(esc["id"], [])
 
     conn.close()
     return escalations
