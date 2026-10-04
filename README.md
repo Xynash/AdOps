@@ -1,39 +1,83 @@
+<div align="center">
+
 # AdSquadOps
 
 **Catch broken campaigns before they go live.**
 
-AdSquadOps is a QA and SLA console for ad operations teams — validate campaigns automatically, track support tickets against a real SLA clock, log escalations between teams, and see it all rolled up in one dashboard.
+A small QA and SLA console for ad operations teams.
 
-🔗 **Live demo**: https://adsquadops.vercel.app
+**Live demo:** [adsquadops.vercel.app](https://adsquadops.vercel.app)
+
+[![React](https://img.shields.io/badge/React_19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev)
+[![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev)
+[![Tailwind](https://img.shields.io/badge/Tailwind_CSS_4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![Groq](https://img.shields.io/badge/Groq-F55036?style=for-the-badge&logoColor=white)](https://groq.com)
+
+</div>
+
+---
+
+## What is this?
+
+Ad campaigns usually break in boring ways: a dead link, a missing tracking tag, or ad copy that promises something the page doesn't. Ad ops teams often catch these by hand, in spreadsheets and Slack threads.
+
+AdSquadOps puts it all in one place: **check the campaign, track the support ticket, log the handoff.**
 
 ---
 
 ## What it does
 
-| Feature | What it means |
+| Feature | In plain words |
 |---|---|
-| **Campaign QA** | Create a campaign (name, URL, tracking tag, ad copy) and validate it — checks the URL is reachable, the tracking tag has valid UTM format, and an AI check flags if the ad copy doesn't match the destination |
-| **SLA Tickets** | Open a support ticket against a campaign, pick High (2h) or Standard (4h) priority, watch a live countdown timer |
-| **Escalation Log** | Route a ticket to another team with a reason — tracked as a timestamped trail: Reported → Team → Fixed |
-| **Overview** | Live stats: total campaigns, QA pass rate, average SLA response time, open tickets, open escalations |
+| **Campaign QA** | Create a campaign and hit Validate. Three checks run: is the URL reachable, is the tracking tag a valid UTM, and does the ad copy fit the destination (AI). |
+| **SLA Tickets** | Open a ticket against a campaign. High priority gets a 2h clock, standard gets 4h, with a live countdown. |
+| **Escalation Log** | Hand a ticket to another team. Every step is timestamped: Reported, then In progress, then Fixed. |
+| **Overview** | Campaigns, QA pass rate, average SLA response, open tickets, open escalations, all in one view. |
+
+---
+
+## How a campaign flows
+
+```
+  Create campaign ──► Validate ──► Passed or Flagged
+                         │
+                         ├─ 1. Is the URL reachable?
+                         ├─ 2. Is the tracking tag a valid UTM?
+                         └─ 3. Does the ad copy fit the page? (AI)
+
+  Something wrong? ──► Open a ticket (2h or 4h SLA clock)
+                          └─► Escalate to another team
+                              Reported ──► In progress ──► Fixed
+```
+
+---
+
+## How it's built
+
+```
+  Browser ──► React app (Vercel) ──► FastAPI (Render) ──► SQLite
+                                          │
+                                          ├──► the campaign's URL (public sites only)
+                                          └──► Groq (AI ad-copy check)
+```
+
+A few decisions worth knowing:
+
+- **URL check is guarded.** The backend only fetches public `http(s)` URLs. Private, loopback and cloud-metadata addresses are blocked, and redirects are re-checked at every hop. Without this, anyone could make the server call its own internal network.
+- **Escalations follow an order.** The backend only accepts `reported → in_progress → fixed`. Skipping or going backwards returns a `400`.
+- **The AI check never blocks.** If Groq fails or returns nothing, that check is marked as skipped and the other two still run.
 
 ---
 
 ## Tech stack
 
-**Frontend**
-- React + Vite
-- Tailwind CSS (utility classes only, no compiler plugins)
-- [lucide-react](https://lucide.dev/) for icons
-
-**Backend**
-- FastAPI (Python)
-- SQLite (via Python's built-in `sqlite3`)
-- [Groq](https://groq.com/) API for the AI ad-copy alignment check
-
-**Hosting**
-- Frontend → [Vercel](https://vercel.com)
-- Backend → [Render](https://render.com)
+| Part | Tools |
+|---|---|
+| Frontend | React 19, Vite, Tailwind CSS 4, lucide-react |
+| Backend | FastAPI, Python `sqlite3`, `requests` |
+| AI check | Groq (`openai/gpt-oss-120b`) |
+| Hosting | Vercel (frontend), Render (backend) |
 
 ---
 
@@ -42,123 +86,132 @@ AdSquadOps is a QA and SLA console for ad operations teams — validate campaign
 ```
 AdSquadOps/
 ├── backend/
-│   ├── main.py              # FastAPI app — all API routes live here
-│   ├── database.py          # SQLite connection + table setup
-│   ├── qa_engine.py         # The 3 QA checks (URL, tracking tag, AI copy check)
-│   ├── auth.py              # Password hashing for real user accounts
-│   ├── requirements.txt     # Python dependencies
-│   ├── .env                 # GROQ_API_KEY (never committed — see below)
-│   └── adsquadops.db        # SQLite database file (created automatically on first run)
+│   ├── main.py            # FastAPI app, all routes
+│   ├── database.py        # SQLite connection and tables
+│   ├── qa_engine.py       # The 3 QA checks and the URL guard
+│   ├── auth.py            # Password hashing (used by /register and /login)
+│   └── requirements.txt
 │
 ├── src/
-│   ├── App.jsx               # Top-level view router (landing / login / signup / persona / dashboard)
-│   │
-│   ├── sections/             # Full-width page sections
-│   │   ├── Navbar.jsx
-│   │   ├── Hero.jsx
-│   │   ├── AdOpsOverview.jsx     # "Why AdOps?" — stats strip + pipeline diagram
-│   │   ├── ProblemStrip.jsx
-│   │   ├── CampaignNews.jsx
-│   │   ├── ProductWalkthrough.jsx # "Lifecycle" — 5-step scroll narrative
-│   │   ├── HowItWorks.jsx         # Tabbed persona-based walkthrough
-│   │   ├── FinalCTA.jsx
-│   │   ├── Footer.jsx
-│   │   ├── PersonaSelect.jsx      # "Individual or Team?" gate before entering the demo
-│   │   ├── AuthPage.jsx           # Shared login/signup page
-│   │   └── Dashboard.jsx          # The actual working product (4 tabs)
-│   │
-│   ├── components/            # Smaller reusable pieces
-│   │   ├── Button.jsx
-│   │   ├── EscalationsPanel.jsx   # Escalations tab content
-│   │   ├── OverviewPanel.jsx      # Overview tab content
-│   │   ├── OnboardingTour.jsx     # First-visit modal walkthrough
-│   │   ├── DemoCampaignPicker.jsx # One-click sample campaigns for empty state
-│   │   ├── FirstTimeHint.jsx      # Small dismissible per-tab tip banner
-│   │   ├── StatBlock.jsx
-│   │   └── mockups/               # Illustrative UI mockups used in marketing sections
-│   │
-│   └── lib/                   # Data + helper functions (no UI)
-│       ├── api.js             # All backend fetch calls
-│       ├── constants.js       # Nav links, company name
-│       ├── smoothScroll.js    # Eased scroll-to-section
-│       ├── adOpsData.js
-│       ├── howItWorks.js
-│       ├── solutions.js
-│       └── footerLinks.js
+│   ├── App.jsx            # Switches between landing, auth, persona and dashboard
+│   ├── sections/          # Landing page sections, Dashboard.jsx (the working product)
+│   ├── components/        # Reusable pieces: panels, onboarding tour, mockups
+│   └── lib/               # api.js (all backend calls), constants, page data
 │
-├── .env                       # (frontend) not currently used, reserved for future
-├── .gitignore
+├── vercel.json            # Makes direct URLs like /dashboard load the app
 └── package.json
 ```
 
 ---
 
-## Running it locally
+## API
 
-You need **two terminals** open at once — the backend and frontend run separately.
+| Method | Route | What it does |
+|---|---|---|
+| POST | `/campaigns` | Create a campaign |
+| GET | `/campaigns` | List campaigns |
+| POST | `/campaigns/{id}/validate` | Run the 3 QA checks |
+| POST | `/tickets` | Open a ticket (`high` or `standard`) |
+| GET | `/tickets` | List tickets |
+| POST | `/tickets/{id}/resolve` | Resolve a ticket |
+| POST | `/escalations` | Escalate a ticket to a team |
+| GET | `/escalations` | List escalations with their timeline |
+| POST | `/escalations/{id}/advance` | Move to the next stage |
+| GET | `/overview` | Dashboard numbers |
+| POST | `/register`, `/login` | Account endpoints (not wired to the UI yet, see limitations) |
 
-### 1. Backend
+When the backend is running locally, interactive docs are at `http://127.0.0.1:8000/docs`.
 
-```powershell
+---
+
+## Run it yourself
+
+You need Node.js, Python 3, and a [Groq API key](https://console.groq.com).
+
+**1. Backend**
+
+```bash
 cd backend
 pip install -r requirements.txt
 ```
 
 Create `backend/.env`:
+
 ```
-GROQ_API_KEY=your_groq_api_key_here
+GROQ_API_KEY=your_key_here
 ```
 
-Start the server:
-```powershell
+Start it:
+
+```bash
 uvicorn main:app --reload --port 8000
 ```
 
-Backend is now running at `http://127.0.0.1:8000`.
+**2. Frontend** (in a second terminal, from the project root)
 
-### 2. Frontend
-
-In a **second terminal**:
-```powershell
-cd AdSquadOps
+```bash
 npm install
 npm run dev
 ```
 
-Frontend is now running at `http://localhost:5173`.
+Open `http://localhost:5173`.
 
-> The frontend talks to `http://127.0.0.1:8000` by default in local dev (set via `VITE_API_URL`, falls back to localhost if unset).
+The frontend talks to `http://127.0.0.1:8000` by default. Set `VITE_API_URL` to point it somewhere else.
+
+### Environment variables
+
+| Variable | Where | Purpose |
+|---|---|---|
+| `GROQ_API_KEY` | `backend/.env` locally, Render dashboard in production | AI ad-copy check |
+| `VITE_API_URL` | Vercel dashboard (production) | URL of the live backend |
+
+Never commit `.env` files. `.gitignore` already excludes them.
 
 ---
 
-## Environment variables
+## Try the demo
 
-| Variable | Where it lives | What it's for |
-|---|---|---|
-| `GROQ_API_KEY` | `backend/.env` (local) / Render dashboard (production) | Powers the AI ad-copy alignment check |
-| `VITE_API_URL` | Vercel dashboard (production only) | Tells the frontend where the live backend is (`https://adops.onrender.com`) |
+Open the dashboard and load one of the three sample campaigns. They all point at this site on purpose, so you can see both sides of QA:
 
-**Never commit `.env` files** — `.gitignore` already excludes them, keep it that way.
+| Sample | Expected result |
+|---|---|
+| AdSquadOps Launch | All three checks pass |
+| Broken Tracking Tag | Fails on the tracking tag |
+| Mismatched Ad Copy | The AI check should flag the copy |
 
 ---
 
 ## Deployment
 
-- **Backend (Render)**: connected to this GitHub repo, root directory set to `backend`, auto-deploys on every push to `main`
-- **Frontend (Vercel)**: connected to the same repo, root directory `./`, auto-deploys on every push to `main`
-- CORS on the backend is locked to the production Vercel URL and localhost — no other origin can call the API
+- **Frontend (Vercel):** connected to this repo and redeploys automatically when `main` changes.
+- **Backend (Render):** root directory is `backend`, start command is `uvicorn main:app --host 0.0.0.0 --port $PORT`. Auto-deploy is off, so new backend code goes live from the Render dashboard (Manual Deploy).
+- CORS only allows the production Vercel URL and `localhost:5173`.
 
 ---
 
-## Known limitations (as of now)
+## Known limitations
 
-- **Database resets on backend redeploy.** Render's free tier uses an ephemeral filesystem — SQLite data doesn't survive a restart or redeploy. A migration to a persistent Postgres database (via Neon) is in progress but not yet complete.
-- **Authentication is partially real.** Password hashing and real `/register`/`/login` endpoints exist on the backend, but the frontend may still be using the simpler local sign-in flow rather than calling them — worth confirming/finishing.
-- **Daily campaign creation limit (4/day)** is enforced client-side via `localStorage`, with an admin email allowlist that bypasses it — not a real server-side rate limit.
-- **Render free tier cold starts.** The backend spins down after inactivity; the first request after idle time can take 30–60 seconds.
+Being upfront about what is and isn't real yet:
+
+- **Data resets on backend redeploy.** SQLite lives on Render's free-tier disk, which isn't persistent.
+- **Login is a demo.** `/register` and `/login` exist on the backend with hashed passwords, but the sign-in pages don't call them yet. The signed-in user is only stored in the browser.
+- **The daily limit is client-side.** New visitors get 4 campaign creations per day, tracked in `localStorage`. It is not a server-side rate limit.
+- **The AI check is shallow.** It sees the ad copy and the URL text, not the actual page content.
+- **Cold starts.** Render's free tier sleeps when idle, so the first request can take 30 to 60 seconds.
 
 ---
 
-## Demo passes
+## What's next
 
-New visitors get **4 campaign creations per day** (tracked per browser). This resets automatically at midnight. There's also a one-click "load a sample campaign" option for anyone who doesn't want to fill in the form manually.
+- A persistent database (Postgres)
+- Real authentication wired to the frontend
+- Server-side rate limiting
+- Tests for the QA checks and the URL guard
+
+---
+
+<div align="center">
+
+*Built by **Ansh Sharma***
+
+</div>
